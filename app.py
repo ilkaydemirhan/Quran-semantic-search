@@ -7,7 +7,7 @@ import streamlit as st
 
 # Sayfa yapılandırması
 st.set_page_config(
-    page_title="Kur'an Anlamsal Arama Motoru", page_icon="📖", layout="centered"
+    page_title="Kur'an Semantik/Anlamsal Arama Motoru", page_icon="📖", layout="centered"
 )
 
 
@@ -66,8 +66,8 @@ with st.spinner(
 # Arayüz Tasarımı
 st.title("📖 Kur'an Anlamsal Arama Motoru")
 st.markdown(
-    "Yapay zeka destekli bu arama motoru ile kelimeler birebir tutmasa bile"
-    " ayetlerin **anlamını** aratabilirsiniz."
+    "Yapay zeka destekli bu arama motoru ile semantik/anlamsal"
+    " sorgulama yapabilirsiniz."
 )
 
 # Arama girdileri
@@ -92,7 +92,7 @@ if st.button("Ara", type="primary"):
         meal_metni = str(row["meal"]).lower()
         for kelime in aranan_kelimeler:
           if len(kelime) > 2 and kelime in meal_metni:
-            benzerlikler[i] += 1.5
+            benzerlikler[i] += 0.15
 
       # 3. Adım: Sıralama
       en_iyi_indexler = np.argsort(benzerlikler)[::-1][: int(kac_adet)]
