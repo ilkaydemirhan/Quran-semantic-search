@@ -71,8 +71,27 @@ if st.button("Ara", type="primary"):
     st.warning("Lütfen geçerli bir arama terimi girin.")
   else:
     with st.spinner("Aranıyor..."):
+      # 1. Adım: Yapay Zeka (Anlamsal) Benzerlikleri Hesapla
       sorgu_vektoru = model.encode([sorgu])
-      benzerlikler = cosine_similarity(sorgu_vektoru, vektorler)[0]
+      benzerlikler = cosine_similarity(sorgu_vektoru, vektorler)[0].copy()
+
+      # 2. Adım: Hibrit Arama (Kelime Eşleşmesi Kontrolü)
+      # Kullanıcının yazdığı kelimeleri alıp küçük harfe çevirelim
+      aranan_kelimeler = sorgu.lower().strip().split()
+
+      for i, row in df_kuran.iterrows():
+        # Ayetin meal metnini küçük harfe çevir
+        meal_metni = str(row["meal"]).lower()
+
+        # Eğer kullanıcının yazdığı kelimelerden biri mealin içinde birebir geçiyorsa
+        # o ayetin yapay zeka skoruna bonus ekleyip öne taşıyalım
+        for kelime in aranan_kelimeler:
+          if len(kelime) > 2 and kelime in meal_metni:  # 2 harften uzun kelimeler için
+            benzerlikler[i] += (
+                1.5  # Skoru yapay olarak artırıp en üste çıkmasını sağlıyoruz
+            )
+
+      # 3. Adım: Güncellenmiş skorlara göre en iyi indexleri seç
       en_iyi_indexler = np.argsort(benzerlikler)[::-1][: int(kac_adet)]
 
       st.markdown("### Sonuçlar")
@@ -81,9 +100,9 @@ if st.button("Ara", type="primary"):
         skor = benzerlikler[idx]
 
         with st.container():
-          st.markdown(f"**{sira}. Sonuç** *(Benzerlik Skoru: {skor:.2f})*")
+          st.markdown(f"**{sira}. Sonuç** *(Arama Skoru: {skor:.2f})*")
           st.markdown(
-             f"**Sure:** {ayet['sure']} ({ayet['sure_en']}) - Ayet"
+              f"**Sure:** {ayet['sure']} ({ayet['sure_en']}) - Ayet"
               f" {ayet['ayet_no']}"
           )
           st.info(f"**Arapça:** {ayet['arapca']}")
