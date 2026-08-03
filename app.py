@@ -5,13 +5,16 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
 
+# Sayfa yapılandırması
 st.set_page_config(
     page_title="Kur'an Anlamsal Arama Motoru", page_icon="📖", layout="centered"
 )
 
 
+# Verileri ve modeli önbelleğe alıyoruz ki her aramada baştan yüklemesin
 @st.cache_resource
 def verileri_ve_modeli_yukle():
+  # Verileri çekme
   url_arapca = "http://api.alquran.cloud/v1/quran/ar.jalalayn"
   url_turkce = "http://api.alquran.cloud/v1/quran/tr.diyanet"
   resp_tr = requests.get(url_turkce).json()
@@ -33,6 +36,8 @@ def verileri_ve_modeli_yukle():
       })
 
   df = pd.DataFrame(tum_ayetler)
+
+  # Modeli yükle ve vektörleri hesapla
   model = SentenceTransformer(
       "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
   )
@@ -47,20 +52,19 @@ with st.spinner(
 ):
   df_kuran, model, vektorler = verileri_ve_modeli_yukle()
 
+# Arayüz Tasarımı
 st.title("📖 Kur'an Anlamsal Arama Motoru")
 st.markdown(
     "Yapay zeka destekli bu arama motoru ile kelimeler birebir tutmasa bile"
     " ayetlerin **anlamını** aratabilirsiniz."
 )
 
+# Arama girdileri
 sorgu = st.text_input(
     "Arama Sorgusu",
     placeholder="Örn: merhamet, sabır, zorluk ve kolaylık...",
 )
 kac_adet = st.slider("Gösterilecek Sonuç Sayısı", min_value=1, max_value=20, value=5)
-
-# Eşik Değeri (Bu skorun altında kalan yapay zeka eşleşmeleri çöpe atılacak)
-GUVENILIR_ESIK = 0.35
 
 if st.button("Ara", type="primary"):
   if not sorgu.strip():
@@ -69,35 +73,19 @@ if st.button("Ara", type="primary"):
     with st.spinner("Aranıyor..."):
       sorgu_vektoru = model.encode([sorgu])
       benzerlikler = cosine_similarity(sorgu_vektoru, vektorler)[0]
-
-      # En yüksek skorlu indexleri al
       en_iyi_indexler = np.argsort(benzerlikler)[::-1][: int(kac_adet)]
 
       st.markdown("### Sonuçlar")
-      bulunan_sayisi = 0
-
       for sira, idx in enumerate(en_iyi_indexler, 1):
         ayet = df_kuran.iloc[idx]
         skor = benzerlikler[idx]
 
-        # Eşik kontrolü: Eğer benzerlik çok düşükse bu sonucu atla
-        if skor < GUVENILIR_ESIK:
-          continue
-
-        bulunan_sayisi += 1
         with st.container():
-          st.markdown(f"**{bulunan_sayisi}. Sonuç** *(Benzerlik Skoru: {skor:.2f})*")
+          st.markdown(f"**{sira}. Sonuç** *(Benzerlik Skoru: {skor:.2f})*")
           st.markdown(
-              f"**Sure:** {ayet['sure']} ({ayet['sure_en']}) - Ayet"
+             f"**Sure:** {ayet['sure']} ({ayet['sure_en']}) - Ayet"
               f" {ayet['ayet_no']}"
           )
           st.info(f"**Arapça:** {ayet['arapca']}")
           st.success(f"**Meal:** {ayet['meal']}")
           st.divider()
-
-      if bulunan_sayisi == 0:
-        st.warning(
-            "Aradığınız kavramla (veya anlamıyla) eşleşen yeterli ve güvenilir"
-            " bir ayet bulunamadı. Daha farklı veya genel kelimeler"
-            " deneyebilirsiniz."
-        )
