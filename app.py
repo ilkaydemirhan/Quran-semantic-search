@@ -113,8 +113,7 @@ if st.button("Ara", type="primary"):
           st.info(f"**Arapça Ayet:**\n\n{ayet['arapca_ayet']}")
 
           # 2. Celaleyn Tefsiri (Örn: Gri / Düz Metin veya Farklı Biçim)
-          st.markdown(
-              f"📝 **Celaleyn Tefsiri:**\n\n> {ayet['celaleyn_tefsir']}"
+          st.markdown(f"**Celaleyn Tefsiri:**\n\n> {ayet['celaleyn_tefsir']}"
           )
 
           # 3. Türkçe Diyanet Meali (Örn: Yeşil / Success Kutusu)
